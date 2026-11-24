@@ -5,182 +5,294 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Course Clash Checker</title>
 <style>
-:root{color-scheme:light;--bg:#f6f7f4;--card:#fff;--ink:#1d2a3a;--mute:#5d6b7a;--line:#d9ded8;--acc:#1f5f5b;--bad:#b3261e;--badbg:#fbe9e7;--ok:#2e7d4f;--okbg:#e6f3ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141a1f;--card:#1c242b;--ink:#e6ebef;--mute:#9aa8b5;--line:#2f3b45;--acc:#6cc0b8;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#141a1f;--card:#1c242b;--ink:#e6ebef;--mute:#9aa8b5;--line:#2f3b45;--acc:#6cc0b8;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f}
+:root{color-scheme:light;--bg:#f4f6f3;--card:#fff;--ink:#1b2a2f;--mute:#5a6a70;--line:#d6ddd8;--acc:#1f5f5b;--onacc:#fff;--bad:#b3261e;--badbg:#fbe9e7;--ok:#2e7d4f;--okbg:#e6f3ea;--warn:#a85d00;--warnbg:#fff3df;--hd:#16302f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12181b;--card:#1b2429;--ink:#e6ebec;--mute:#9aabb0;--line:#2e3b41;--acc:#6cc0b8;--onacc:#0d1a19;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f;--warn:#f0b255;--warnbg:#33260f;--hd:#0d1517}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12181b;--card:#1b2429;--ink:#e6ebec;--mute:#9aabb0;--line:#2e3b41;--acc:#6cc0b8;--onacc:#0d1a19;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f;--warn:#f0b255;--warnbg:#33260f;--hd:#0d1517}
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:880px;margin:0 auto;padding:28px 18px 60px}
-h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:0 0 6px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--hd);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:var(--hd);color:#eef4f2}
+.in{max-width:920px;margin:0 auto;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font:700 1.15rem Georgia,serif}
+nav a{color:#c9d8d4;text-decoration:none;padding:6px 12px;border-radius:6px;margin-left:4px}
+nav a[aria-current]{background:rgba(255,255,255,.16);color:#fff}
+nav a:focus-visible,a.btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+main{max-width:920px;margin:0 auto;padding:26px 18px 60px}
+h1{font:700 2.1rem/1.15 Georgia,"Times New Roman",serif;margin:0 0 8px}
 h2{font:700 1.2rem Georgia,serif;margin:0 0 10px}
-p.lead{color:var(--mute);margin:0 0 24px;max-width:60ch}
-section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
+h3{font:700 1rem Georgia,serif;margin:14px 0 4px}
+.lead{color:var(--mute);margin:0 0 22px;max-width:62ch}
+section,.paper{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .hint{color:var(--mute);font-size:.9rem;margin:0 0 12px}
 .row{display:grid;grid-template-columns:1.2fr 1.4fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
 input,textarea,button{font:inherit;color:inherit}
 input,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%;min-width:0}
-textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92rem}
-button{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:8px 14px;cursor:pointer}
-button.main{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.main{color:#0d1a19}}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+textarea{min-height:110px;font:.92rem ui-monospace,Menlo,Consolas,monospace}
+button,a.btn{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block;color:var(--ink)}
+button.main{background:var(--acc);color:var(--onacc);border-color:var(--acc);font-weight:600}
+button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .msg{padding:10px 12px;border-radius:6px;margin:8px 0;border-left:4px solid}
-.bad{background:var(--badbg);border-color:var(--bad)}.ok{background:var(--okbg);border-color:var(--ok)}
-.warn{background:var(--bg);border-color:var(--mute)}
+.bad{background:var(--badbg);border-color:var(--bad)}.ok{background:var(--okbg);border-color:var(--ok)}.note{background:var(--bg);border-color:var(--mute)}.warn{background:var(--warnbg);border-color:var(--warn)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.stat b{display:block;font:700 2rem/1.1 Georgia,serif}.stat.hot{border-color:var(--bad);background:var(--badbg)}.stat.hot b{color:var(--bad)}
+.stat span{color:var(--mute);font-size:.85rem}
+#detail{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:5;margin-bottom:14px}
+[data-c]{cursor:pointer;transition:opacity .15s}
+[data-c].sel{outline:2px solid var(--warn);outline-offset:1px}
+.grow{display:grid;grid-template-columns:84px 1fr;gap:8px;align-items:center;margin-bottom:5px;border-radius:6px}
+.gax{position:relative;height:18px;margin-left:92px;font-size:.75rem;color:var(--mute)}
+.gax span{position:absolute;transform:translateX(-50%)}
+.gt{position:relative;height:30px;border:1px solid var(--line);border-radius:4px;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px)}
+.gb{position:absolute;top:3px;bottom:3px;border-radius:3px;background:var(--acc);color:var(--onacc);font-size:.75rem;padding:0 6px;overflow:hidden;white-space:nowrap;line-height:22px}
+.gb.bad{background:var(--bad)}
+.gd{font-weight:600;margin:12px 0 6px;font-size:.92rem}
+.drow{display:grid;grid-template-columns:84px 1fr 28px;gap:8px;align-items:center;margin-bottom:5px}
+.bar{height:16px;background:var(--bg);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}.drow.top .bar i{background:var(--warn)}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;border:1px solid var(--line);margin:2px 4px 2px 0;background:var(--bg)}
 .scroll{overflow-x:auto}
 table{border-collapse:collapse;font-size:.9rem}
 th,td{border:1px solid var(--line);padding:4px 9px;text-align:center}
-th:first-child,td:first-child{text-align:left}
-.one{background:var(--badbg);font-weight:700}
+th:first-child,td:first-child{text-align:left}.one{background:var(--badbg);font-weight:700}
 svg{width:100%;height:auto;max-height:480px}
+.paper h1{font-size:1.7rem}.paper p,.paper li{max-width:70ch}
 .sr{position:absolute;left:-9999px}
-@media (max-width:640px){.row{grid-template-columns:1fr 1fr}.row input:first-child{grid-column:1/-1}}
+@media (max-width:640px){.row{grid-template-columns:1fr 1fr}.row input:first-child{grid-column:1/-1}.stats{grid-template-columns:1fr 1fr}.grow{grid-template-columns:62px 1fr}.gax{margin-left:70px}}
+@media print{header,body::before,.noprint{display:none!important}body{background:#fff}.paper{border:0;padding:0}}
+@media (prefers-reduced-motion:reduce){[data-c]{transition:none}}
 </style>
 </head>
 <body>
+<header><div class="in"><b class="brand">Course clash checker</b>
+<nav aria-label="Pages"><a href="#checker" id="n-checker">Checker</a><a href="#about" id="n-about">About</a><a href="#report" id="n-report">Report</a></nav></div></header>
 <main>
-<h1>Course clash checker</h1>
-<p class="lead">Enter each course with its date and time, then list which courses each student takes. The checker finds timetable overlaps, builds the course conflict graph and suggests time slots. Nothing leaves your browser.</p>
-
+<div id="v-checker">
+<h1>Find course clashes before they happen</h1>
+<p class="lead">Enter each course with its date and time, then list what each student takes. You get a timeline of overlaps, the conflict graph and suggested time slots. Nothing leaves your browser.</p>
 <section>
 <h2>Courses and times</h2>
-<p class="hint">One row per course session. Courses on the same date clash when their times overlap.</p>
+<p class="hint">One row per course. Courses on the same date clash when their times overlap.</p>
 <div id="courses"></div>
 <div class="actions"><button id="addRow" type="button">Add course</button></div>
 </section>
-
 <section>
 <h2>Student registrations</h2>
-<p class="hint">One student per line, as <code>ID: COURSE, COURSE</code>. To check only your own timetable, enter a single line.</p>
+<p class="hint">One student per line: <code>ID: COURSE, COURSE</code>. To check only your own timetable, enter a single line.</p>
 <label class="sr" for="students">Student registrations</label>
 <textarea id="students" spellcheck="false"></textarea>
-<div class="actions">
-<button class="main" id="check" type="button">Check clashes</button>
-<button id="sample" type="button">Load sample data</button>
-<button id="clear" type="button">Clear all</button>
-</div>
+<div class="actions"><button class="main" id="check" type="button">Check clashes</button><button id="sample" type="button">Load sample data</button><button id="clear" type="button">Clear all</button></div>
 </section>
-
 <div id="out" aria-live="polite"></div>
+</div>
+
+<div id="v-about" hidden>
+<h1>About this project</h1>
+<p class="lead">A CSC213 Discrete Structures group project that turns course registrations into a graph to find scheduling conflicts.</p>
+<section><h2>The idea</h2>
+<p>Each course is a <b>vertex</b>. Two courses are joined by an <b>edge</b> when at least one student takes both, so they must not run at the same time. Once the data is a graph, conflicts can be counted, listed and drawn.</p>
+<h3>How to use it</h3>
+<p>1. Add your courses with date, start and end time. 2. List each student and their courses. 3. Press Check clashes, then click any course in the timeline, graph or degree list to see its conflicts. 4. Open the Report tab to print or save the results as a PDF.</p></section>
+<section><h2>Discrete structures used</h2>
+<p><b>Sets</b> hold each student’s unique courses. The <b>graph</b> G = (V, E) models conflicts. The <b>adjacency list</b> and <b>adjacency matrix</b> store them. The <b>degree</b> of a course is its number of conflicts, and the <b>handshake lemma</b> (degrees add up to twice the edges) checks the count. <b>Graph colouring</b> assigns time slots so that courses sharing students never share a slot.</p></section>
+<section><h2>Limitations</h2>
+<p>It finds conflicts and suggests slot groups but does not build a full timetable. Rooms and lecturer availability are not considered, each course has one session, and results depend on the data you enter.</p></section>
+<section><h2>Group 1</h2>
+<p>Oluwafolayinka Oladipo (A00025456), Muhammad Umar (A00026016), Francisca Okorie-Enyinnaya (A00025252), Secondee Samuel Alfa (A00025801), Mohammed Alameen (A00024595) and Joseph Yonga (A00026543).</p>
+<p class="hint">Course: CSC213 Discrete Structures. Lecturer: Dr. Gabriel Ayem.</p></section>
+</div>
+
+<div id="v-report" hidden></div>
 </main>
 <script>
 "use strict";
-var SAMPLE_C=[["MAT101","2026-12-07","09:00","11:00"],["PHY101","2026-12-07","10:00","12:00"],["CSC101","2026-12-07","13:00","15:00"],["STA101","2026-12-08","09:00","11:00"],["ENG101","2026-12-08","10:30","12:30"],["GST101","2026-12-09","09:00","11:00"]];
-var SAMPLE_S="S001: MAT101, PHY101, CSC101\nS002: MAT101, CSC101, STA101\nS003: PHY101, CSC101\nS004: MAT101, STA101, ENG101\nS005: ENG101, GST101\nS006: PHY101, STA101";
-var box=document.getElementById("courses"),out=document.getElementById("out"),stu=document.getElementById("students");
+var SC=[["MAT101","2026-12-07","09:00","11:00"],["PHY101","2026-12-07","10:00","12:00"],["CSC101","2026-12-07","13:00","15:00"],["STA101","2026-12-08","09:00","11:00"],["ENG101","2026-12-08","10:30","12:30"],["GST101","2026-12-09","09:00","11:00"]];
+var SS="S001: MAT101, PHY101, CSC101\nS002: MAT101, CSC101, STA101\nS003: PHY101, CSC101\nS004: MAT101, STA101, ENG101\nS005: ENG101, GST101\nS006: PHY101, STA101";
+var PAL=["#1f5f5b","#c26a00","#6a4c93","#2e7d4f","#2a6fb0","#8a5a44"];
+var $=function(i){return document.getElementById(i);};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+var box=$("courses"),stu=$("students"),out=$("out"),M=null,sel=null,mode="clash";
 
 function addRow(v){
-  v=v||["","","09:00","11:00"];
-  var r=document.createElement("div");r.className="row";
-  var f=[["text","Course code","MAT101",v[0]],["date","Date","",v[1]],["time","Start time","",v[2]],["time","End time","",v[3]]];
-  f.forEach(function(x){var i=document.createElement("input");i.type=x[0];i.placeholder=x[2];i.value=x[3];i.setAttribute("aria-label",x[1]);r.appendChild(i);});
-  var d=document.createElement("button");d.type="button";d.textContent="Remove";d.onclick=function(){r.remove();};
-  r.appendChild(d);box.appendChild(r);
+  v=v||["","","09:00","11:00"];var r=el("div","row");
+  [["text","Course code","MAT101"],["date","Date",""],["time","Start time",""],["time","End time",""]].forEach(function(x,i){
+    var n=el("input");n.type=x[0];n.placeholder=x[2];n.value=v[i];n.setAttribute("aria-label",x[1]);r.appendChild(n);});
+  var d=el("button",null,"Remove");d.type="button";d.onclick=function(){r.remove();};r.appendChild(d);box.appendChild(r);
 }
-function loadSample(){box.innerHTML="";SAMPLE_C.forEach(addRow);stu.value=SAMPLE_S;out.innerHTML="";}
-document.getElementById("addRow").onclick=function(){addRow();};
-document.getElementById("sample").onclick=loadSample;
-document.getElementById("clear").onclick=function(){box.innerHTML="";addRow();stu.value="";out.innerHTML="";};
+function loadSample(){box.innerHTML="";SC.forEach(addRow);stu.value=SS;out.innerHTML="";M=null;}
+$("addRow").onclick=function(){addRow();};
+$("sample").onclick=loadSample;
+$("clear").onclick=function(){box.innerHTML="";addRow();stu.value="";out.innerHTML="";M=null;};
 
 function code(s){return s.replace(/\s+/g,"").toUpperCase();}
-function msg(cls,text){var d=document.createElement("div");d.className="msg "+cls;d.textContent=text;return d;}
-function sec(title){var s=document.createElement("section");var h=document.createElement("h2");h.textContent=title;s.appendChild(h);out.appendChild(s);return s;}
+function mins(t){var p=t.split(":");return +p[0]*60+ +p[1];}
+function fdate(d){return new Date(d+"T00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});}
 
-function check(){
-  out.innerHTML="";
-  var courses={},errors=[];
+function analyze(){
+  var errs=[],C={},R={};
   Array.prototype.forEach.call(box.children,function(r,n){
     var i=r.querySelectorAll("input"),c=code(i[0].value),d=i[1].value,s=i[2].value,e=i[3].value;
     if(!c&&!d&&!s&&!e)return;
-    if(!c||!d||!s||!e){errors.push("Row "+(n+1)+" is incomplete: fill in code, date, start and end.");return;}
-    if(e<=s){errors.push("Row "+(n+1)+" ("+c+"): the end time must be after the start time.");return;}
-    if(courses[c]){errors.push("Row "+(n+1)+": "+c+" is already listed. Use one row per course.");return;}
-    courses[c]={date:d,s:s,e:e};
+    if(!c||!d||!s||!e){errs.push("Row "+(n+1)+" is incomplete: fill in code, date, start and end.");return;}
+    if(e<=s){errs.push("Row "+(n+1)+" ("+c+"): the end time must be after the start time.");return;}
+    if(C[c]){errs.push("Row "+(n+1)+": "+c+" is already listed. Use one row per course.");return;}
+    C[c]={date:d,s:s,e:e};
   });
-  var reg={};
   stu.value.split("\n").forEach(function(line,n){
-    if(!line.trim())return;
-    var p=line.split(":");
-    if(p.length<2||!p[0].trim()){errors.push("Student line "+(n+1)+" needs the form ID: COURSE, COURSE.");return;}
-    var list=p.slice(1).join(":").split(/[,\s]+/).filter(Boolean).map(code);
-    reg[p[0].trim()]=(reg[p[0].trim()]||[]).concat(list).filter(function(x,i,a){return a.indexOf(x)===i;});
+    if(!line.trim())return;var p=line.split(":");
+    if(p.length<2||!p[0].trim()){errs.push("Student line "+(n+1)+" needs the form ID: COURSE, COURSE.");return;}
+    var k=p[0].trim(),l=p.slice(1).join(":").split(/[,\s]+/).filter(Boolean).map(code);
+    R[k]=(R[k]||[]).concat(l).filter(function(x,i,a){return a.indexOf(x)===i;});
   });
-  var names=Object.keys(courses).sort(),ids=Object.keys(reg);
-  if(errors.length||!names.length||!ids.length){
-    var s=sec("Fix these first");
-    errors.forEach(function(e){s.appendChild(msg("bad",e));});
-    if(!names.length)s.appendChild(msg("bad","Add at least one course with a date and times."));
-    if(!ids.length)s.appendChild(msg("bad","Add at least one student with their courses."));
-    return;
-  }
-  var unknown=[];
-  ids.forEach(function(id){reg[id].forEach(function(c){if(!courses[c]&&unknown.indexOf(c)<0)unknown.push(c);});});
-  // graph from shared students; real clash when times overlap
-  var edges={},adj={};names.forEach(function(c){adj[c]=[];});
+  var names=Object.keys(C).sort(),ids=Object.keys(R);
+  if(!names.length)errs.push("Add at least one course with a date and times.");
+  if(!ids.length)errs.push("Add at least one student with their courses.");
+  if(errs.length)return{errs:errs};
+  var unknown=[],E={},adj={},deg={},max=0;
+  names.forEach(function(c){adj[c]=[];});
   ids.forEach(function(id){
-    var t=reg[id].filter(function(c){return courses[c];}).sort();
+    R[id].forEach(function(c){if(!C[c]&&unknown.indexOf(c)<0)unknown.push(c);});
+    var t=R[id].filter(function(c){return C[c];}).sort();
     for(var a=0;a<t.length;a++)for(var b=a+1;b<t.length;b++){
       var k=t[a]+"|"+t[b];
-      if(!edges[k]){edges[k]={a:t[a],b:t[b],who:[]};adj[t[a]].push(t[b]);adj[t[b]].push(t[a]);}
-      edges[k].who.push(id);
+      if(!E[k]){E[k]={a:t[a],b:t[b],who:[]};adj[t[a]].push(t[b]);adj[t[b]].push(t[a]);}
+      E[k].who.push(id);
     }
   });
-  var keys=Object.keys(edges).sort();
-  keys.forEach(function(k){var e=edges[k],A=courses[e.a],B=courses[e.b];e.clash=A.date===B.date&&A.s<B.e&&B.s<A.e;});
-  var clashes=keys.filter(function(k){return edges[k].clash;});
-
-  var s1=sec("Timetable clashes");
-  if(unknown.length)s1.appendChild(msg("warn","These courses have no time entered, so they were skipped: "+unknown.join(", ")+"."));
-  if(!clashes.length)s1.appendChild(msg("ok","No clashes. No student has two overlapping courses."));
-  clashes.forEach(function(k){
-    var e=edges[k],A=courses[e.a],B=courses[e.b];
-    s1.appendChild(msg("bad",e.a+" ("+A.s+"–"+A.e+") overlaps "+e.b+" ("+B.s+"–"+B.e+") on "+A.date+". Affects: "+e.who.join(", ")+"."));
-  });
-
-  var s2=sec("Courses that share students");
-  s2.appendChild(msg("warn","Each pair below must not be scheduled at the same time. Pairs already overlapping are marked."));
-  if(!keys.length)s2.appendChild(msg("ok","No student takes two listed courses."));
-  keys.forEach(function(k){var e=edges[k];s2.appendChild(msg(e.clash?"bad":"ok",e.a+" and "+e.b+": shared by "+e.who.join(", ")+(e.clash?" (overlapping now)":" (no overlap)")));});
-
-  var deg={},max=0;names.forEach(function(c){deg[c]=adj[c].length;if(deg[c]>max)max=deg[c];});
-  var top=names.filter(function(c){return deg[c]===max;});
-  var s3=sec("Degrees and matrix");
-  s3.appendChild(msg("warn","Most conflicts: "+top.join(", ")+" with degree "+max+". The degrees add up to "+(2*keys.length)+", which is twice the "+keys.length+" conflict pairs."));
-  var w=document.createElement("div");w.className="scroll";
-  var tb=document.createElement("table"),hd="<tr><th>Degree</th>";
-  var tr=document.createElement("tr"),th=document.createElement("th");th.textContent="Course";tr.appendChild(th);
-  names.forEach(function(c){var h=document.createElement("th");h.textContent=c;tr.appendChild(h);});
-  var dh=document.createElement("th");dh.textContent="Degree";tr.appendChild(dh);tb.appendChild(tr);
-  names.forEach(function(c){
-    var r=document.createElement("tr"),h=document.createElement("td");h.textContent=c;r.appendChild(h);
-    names.forEach(function(d){var x=document.createElement("td"),on=adj[c].indexOf(d)>=0;x.textContent=on?1:0;if(on)x.className="one";r.appendChild(x);});
-    var g=document.createElement("td");g.textContent=deg[c];r.appendChild(g);tb.appendChild(r);
-  });
-  w.appendChild(tb);s3.appendChild(w);
-
-  // greedy colouring: highest degree first
-  var col={};
+  var keys=Object.keys(E).sort(),inClash={};
+  keys.forEach(function(k){var e=E[k],A=C[e.a],B=C[e.b];e.clash=A.date===B.date&&A.s<B.e&&B.s<A.e;if(e.clash){inClash[e.a]=1;inClash[e.b]=1;}});
+  names.forEach(function(c){deg[c]=adj[c].length;if(deg[c]>max)max=deg[c];});
+  var col={},slots={};
   names.slice().sort(function(a,b){return deg[b]-deg[a]||(a<b?-1:1);}).forEach(function(c){
-    var u={};adj[c].forEach(function(n){if(col[n])u[col[n]]=1;});var k=1;while(u[k])k++;col[c]=k;
-  });
-  var slots={};names.forEach(function(c){(slots[col[c]]=slots[col[c]]||[]).push(c);});
-  var s4=sec("Suggested time slots");
-  s4.appendChild(msg("warn","Courses in the same slot share no students, so they can run at the same time."));
-  Object.keys(slots).forEach(function(k){s4.appendChild(msg("ok","Slot "+k+": "+slots[k].join(", ")));});
+    var u={};adj[c].forEach(function(n){if(col[n])u[col[n]]=1;});var k=1;while(u[k])k++;col[c]=k;});
+  names.forEach(function(c){(slots[col[c]]=slots[col[c]]||[]).push(c);});
+  return{C:C,R:R,names:names,ids:ids,unknown:unknown,E:E,keys:keys,adj:adj,deg:deg,max:max,
+    top:names.filter(function(c){return deg[c]===max;}),col:col,slots:slots,
+    clashes:keys.filter(function(k){return E[k].clash;}).map(function(k){return E[k];}),inClash:inClash};
+}
 
-  var s5=sec("Conflict graph");
-  s5.appendChild(msg("warn","Red lines are conflicts that overlap in time right now. Grey lines share students but do not overlap."));
-  var N=names.length,R=N>1?170:0,svg='<svg viewBox="0 0 440 400" role="img" aria-label="Course conflict graph">',P={};
-  names.forEach(function(c,i){var a=2*Math.PI*i/N-Math.PI/2;P[c]=[220+R*Math.cos(a),200+R*Math.sin(a)];});
-  keys.forEach(function(k){var e=edges[k];svg+='<line x1="'+P[e.a][0]+'" y1="'+P[e.a][1]+'" x2="'+P[e.b][0]+'" y2="'+P[e.b][1]+'" stroke="'+(e.clash?"var(--bad)":"var(--mute)")+'" stroke-width="'+(e.clash?3:1.5)+'"/>';});
-  names.forEach(function(c){svg+='<circle cx="'+P[c][0]+'" cy="'+P[c][1]+'" r="30" fill="var(--acc)"/><text x="'+P[c][0]+'" y="'+(P[c][1]+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="var(--card)">'+c+'</text>';});
-  var g=document.createElement("div");g.innerHTML=svg+"</svg>";s5.appendChild(g);
+function sec(t){var s=el("section");s.appendChild(el("h2",null,t));out.appendChild(s);return s;}
+function sdata(n,c){n.setAttribute("data-c",c);n.tabIndex=0;n.setAttribute("role","button");return n;}
+
+function render(){
+  out.innerHTML="";sel=null;
+  if(M.errs){var s=sec("Fix these first");M.errs.forEach(function(e){s.appendChild(el("div","msg bad",e));});return;}
+  var st=el("div","stats");
+  [[M.names.length,"courses"],[M.ids.length,"students"],[M.keys.length,"conflict pairs"],[M.clashes.length,"time clashes"]].forEach(function(x,i){
+    var d=el("div","stat"+(i===3&&x[0]?" hot":""));d.appendChild(el("b",null,x[0]));d.appendChild(el("span",null,x[1]));st.appendChild(d);});
+  out.appendChild(st);
+  out.appendChild(el("div","msg "+(M.clashes.length?"bad":"ok"),M.clashes.length?"Clashes found: "+M.clashes.length+" pair"+(M.clashes.length>1?"s":"")+" of courses overlap for at least one student.":"No clashes. No student has two overlapping courses."));
+  if(M.unknown.length)out.appendChild(el("div","msg warn","No time was entered for "+M.unknown.join(", ")+", so they were skipped."));
+  var dt=el("div","msg note");dt.id="detail";out.appendChild(dt);
+
+  var s1=sec("Timeline");
+  var lo=1440,hi=0;M.names.forEach(function(c){lo=Math.min(lo,mins(M.C[c].s));hi=Math.max(hi,mins(M.C[c].e));});
+  lo=Math.floor(lo/60)*60;hi=Math.ceil(hi/60)*60;var span=hi-lo,hrs=span/60;
+  var ax=el("div","gax");for(var h=lo;h<=hi;h+=60){var sp=el("span",null,("0"+h/60).slice(-2)+":00");sp.style.left=((h-lo)/span*100)+"%";ax.appendChild(sp);}
+  s1.appendChild(ax);
+  var dates=M.names.map(function(c){return M.C[c].date;}).filter(function(x,i,a){return a.indexOf(x)===i;}).sort();
+  dates.forEach(function(d){
+    s1.appendChild(el("div","gd",fdate(d)));
+    M.names.filter(function(c){return M.C[c].date===d;}).sort(function(a,b){return M.C[a].s<M.C[b].s?-1:1;}).forEach(function(c){
+      var r=sdata(el("div","grow"),c);r.appendChild(el("b",null,c));
+      var t=el("div","gt");t.style.backgroundSize="calc(100%/"+hrs+") 100%";
+      var b=el("div","gb"+(M.inClash[c]?" bad":""),M.C[c].s+"–"+M.C[c].e);
+      b.style.left=((mins(M.C[c].s)-lo)/span*100)+"%";b.style.width=((mins(M.C[c].e)-mins(M.C[c].s))/span*100)+"%";
+      t.appendChild(b);r.appendChild(t);s1.appendChild(r);});
+  });
+  s1.appendChild(el("p","hint","Red bars overlap another course taken by a shared student. Click a course to see its conflicts everywhere."));
+
+  var s2=sec("Conflicts");
+  if(!M.keys.length)s2.appendChild(el("div","msg ok","No student takes two listed courses."));
+  M.keys.forEach(function(k){var e=M.E[k];s2.appendChild(el("div","msg "+(e.clash?"bad":"ok"),e.a+" and "+e.b+": shared by "+e.who.join(", ")+(e.clash?" (overlapping)":" (no overlap)")));});
+
+  var s3=sec("Conflict graph");
+  var bt=el("button",null,"Colour by time slot");bt.type="button";
+  bt.onclick=function(){mode=mode==="clash"?"slot":"clash";bt.textContent=mode==="clash"?"Colour by time slot":"Colour by clash";graph();paint();};
+  s3.appendChild(bt);var gw=el("div");gw.id="gw";s3.appendChild(gw);graph();
+
+  var s4=sec("Degrees");
+  s4.appendChild(el("p","hint","Degree is the number of courses that conflict with a course. Highest: "+M.top.join(", ")+" ("+M.max+"). The degrees add up to "+(2*M.keys.length)+", twice the "+M.keys.length+" conflict pairs."));
+  M.names.forEach(function(c){
+    var r=sdata(el("div","drow"+(M.deg[c]===M.max&&M.max?" top":"")),c);r.appendChild(el("b",null,c));
+    var b=el("div","bar"),i=el("i");i.style.width=(M.max?M.deg[c]/M.max*100:0)+"%";b.appendChild(i);r.appendChild(b);r.appendChild(el("span",null,M.deg[c]));s4.appendChild(r);});
+
+  var s5=sec("Adjacency matrix"),w=el("div","scroll"),tb=el("table"),tr=el("tr");
+  tr.appendChild(el("th",null,"Course"));M.names.forEach(function(c){tr.appendChild(el("th",null,c));});tb.appendChild(tr);
+  M.names.forEach(function(c){var r=el("tr");r.appendChild(el("td",null,c));
+    M.names.forEach(function(d){var on=M.adj[c].indexOf(d)>=0;r.appendChild(el("td",on?"one":null,on?1:0));});tb.appendChild(r);});
+  w.appendChild(tb);s5.appendChild(w);
+
+  var s6=sec("Suggested time slots");
+  s6.appendChild(el("p","hint","Courses in one slot share no students, so they can run at the same time. "+Object.keys(M.slots).length+" slot(s) are enough."));
+  Object.keys(M.slots).forEach(function(k){var d=el("div","msg ok");d.appendChild(el("b",null,"Slot "+k+": "));
+    M.slots[k].forEach(function(c){d.appendChild(sdata(el("span","chip",c),c));});s6.appendChild(d);});
+  var a=el("a","btn noprint","Open the report");a.href="#report";out.appendChild(a);
+  paint();
   out.scrollIntoView({behavior:"smooth"});
 }
-document.getElementById("check").onclick=check;
-loadSample();
+
+function graph(){
+  var N=M.names.length,R=N>1?170:0,P={},svg='<svg viewBox="0 0 440 400" role="img" aria-label="Course conflict graph">';
+  M.names.forEach(function(c,i){var a=2*Math.PI*i/N-Math.PI/2;P[c]=[220+R*Math.cos(a),200+R*Math.sin(a)];});
+  M.keys.forEach(function(k){var e=M.E[k];svg+='<line data-a="'+e.a+'" data-b="'+e.b+'" x1="'+P[e.a][0]+'" y1="'+P[e.a][1]+'" x2="'+P[e.b][0]+'" y2="'+P[e.b][1]+'" stroke="'+(e.clash?"var(--bad)":"var(--mute)")+'" stroke-width="'+(e.clash?3:1.5)+'"/>';});
+  M.names.forEach(function(c){var f=mode==="slot"?PAL[(M.col[c]-1)%PAL.length]:(M.inClash[c]?"#b3261e":"#1f5f5b");
+    svg+='<g data-c="'+c+'" tabindex="0" role="button"><circle cx="'+P[c][0]+'" cy="'+P[c][1]+'" r="31" fill="'+f+'"/><text x="'+P[c][0]+'" y="'+(P[c][1]+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+c+'</text></g>';});
+  $("gw").innerHTML=svg+"</svg>";
+}
+
+function paint(){
+  var nb=sel?M.adj[sel].concat(sel):null;
+  document.querySelectorAll("[data-c]").forEach(function(n){var c=n.getAttribute("data-c");
+    n.style.opacity=!sel||nb.indexOf(c)>=0?1:.25;n.classList.toggle("sel",c===sel);});
+  document.querySelectorAll("line[data-a]").forEach(function(l){
+    l.style.opacity=!sel||l.getAttribute("data-a")===sel||l.getAttribute("data-b")===sel?1:.12;});
+  var d=$("detail");if(!d)return;
+  if(!sel){d.textContent="Select a course in the timeline, graph or lists to see what it conflicts with.";return;}
+  var cl=M.clashes.filter(function(e){return e.a===sel||e.b===sel;}).map(function(e){return(e.a===sel?e.b:e.a)+" ("+e.who.join(", ")+")";});
+  d.textContent=sel+": degree "+M.deg[sel]+", shares students with "+(M.adj[sel].join(", ")||"no other course")+". "+(cl.length?"Overlaps in time with "+cl.join("; ")+".":"No time overlaps.");
+}
+out.addEventListener("click",function(e){var t=e.target.closest("[data-c]");if(t){var c=t.getAttribute("data-c");sel=sel===c?null:c;paint();}});
+out.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){var t=e.target.closest("[data-c]");if(t){e.preventDefault();var c=t.getAttribute("data-c");sel=sel===c?null:c;paint();}}});
+$("check").onclick=function(){M=analyze();render();};
+
+function report(){
+  var v=$("v-report");v.innerHTML="";
+  if(!M||M.errs){var m=el("section");m.appendChild(el("h2",null,"No results yet"));m.appendChild(el("p",null,"Run a check first. The report is built from your courses and students."));
+    var a=el("a","btn","Go to the checker");a.href="#checker";m.appendChild(a);v.appendChild(m);return;}
+  var p=el("article","paper");
+  p.appendChild(el("h1",null,"Course Registration Conflict Detection System Using Graph Theory"));
+  p.appendChild(el("p","hint","CSC213 Discrete Structures · Group 1 · Lecturer: Dr. Gabriel Ayem"));
+  var pr=el("button","main noprint","Print or save as PDF");pr.type="button";pr.onclick=function(){window.print();};p.appendChild(pr);
+  p.appendChild(el("h2",null,"Summary"));
+  p.appendChild(el("p",null,"The checker analysed "+M.ids.length+" students registered across "+M.names.length+" courses. It found "+M.keys.length+" pairs of courses that share students, and "+M.clashes.length+" of those pairs overlap in time. The most conflicted course"+(M.top.length>1?"s are ":" is ")+M.top.join(", ")+" with degree "+M.max+". "+Object.keys(M.slots).length+" time slot(s) are enough to schedule every course without a shared student clashing."));
+  p.appendChild(el("h2",null,"Timetable clashes"));
+  if(!M.clashes.length)p.appendChild(el("p",null,"None. No student has two overlapping courses."));
+  else{var ul=el("ul");M.clashes.forEach(function(e){var A=M.C[e.a],B=M.C[e.b];ul.appendChild(el("li",null,e.a+" ("+A.s+"–"+A.e+") overlaps "+e.b+" ("+B.s+"–"+B.e+") on "+fdate(A.date)+". Students affected: "+e.who.join(", ")+"."));});p.appendChild(ul);}
+  p.appendChild(el("h2",null,"Courses and degrees"));
+  var tb=el("table"),h=el("tr");["Course","Date","Time","Degree","Conflicts with"].forEach(function(x){h.appendChild(el("th",null,x));});tb.appendChild(h);
+  M.names.forEach(function(c){var r=el("tr");[c,fdate(M.C[c].date),M.C[c].s+"–"+M.C[c].e,M.deg[c],M.adj[c].join(", ")||"none"].forEach(function(x){r.appendChild(el("td",null,x));});tb.appendChild(r);});
+  var w=el("div","scroll");w.appendChild(tb);p.appendChild(w);
+  p.appendChild(el("h2",null,"Suggested time slots"));
+  var u2=el("ul");Object.keys(M.slots).forEach(function(k){u2.appendChild(el("li",null,"Slot "+k+": "+M.slots[k].join(", ")));});p.appendChild(u2);
+  p.appendChild(el("h2",null,"Method"));
+  p.appendChild(el("p",null,"Each course is a vertex. For every student, every pair of that student’s courses becomes an edge. The adjacency list and matrix are built from the edges, the degree of a course is its number of neighbours, and the degrees are checked against the handshake lemma. Two courses clash when they are on the same date and each starts before the other ends. Time slots come from greedy graph colouring, highest degree first."));
+  p.appendChild(el("h2",null,"Limitations"));
+  p.appendChild(el("p",null,"The system detects conflicts and suggests slot groups. It does not build a full timetable, and it ignores rooms and lecturer availability. Results depend on the accuracy of the data entered."));
+  p.appendChild(el("h2",null,"References"));
+  p.appendChild(el("p",null,"Diestel, R. (2017). Graph theory (5th ed.). Springer."));
+  v.appendChild(p);
+}
+
+function route(){
+  var h=location.hash.slice(1);if(h!=="about"&&h!=="report")h="checker";
+  ["checker","about","report"].forEach(function(n){
+    $("v-"+n).hidden=n!==h;var a=$("n-"+n);if(n===h)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+  if(h==="report")report();window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",route);
+loadSample();route();
 </script>
 </body>
 </html>
