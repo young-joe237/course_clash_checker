@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Course Clash Checker</title>
+<style>
+:root{color-scheme:light;--bg:#f6f7f4;--card:#fff;--ink:#1d2a3a;--mute:#5d6b7a;--line:#d9ded8;--acc:#1f5f5b;--bad:#b3261e;--badbg:#fbe9e7;--ok:#2e7d4f;--okbg:#e6f3ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141a1f;--card:#1c242b;--ink:#e6ebef;--mute:#9aa8b5;--line:#2f3b45;--acc:#6cc0b8;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141a1f;--card:#1c242b;--ink:#e6ebef;--mute:#9aa8b5;--line:#2f3b45;--acc:#6cc0b8;--bad:#ff8a80;--badbg:#3a1f1d;--ok:#7fd49c;--okbg:#17301f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:880px;margin:0 auto;padding:28px 18px 60px}
+h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:0 0 6px}
+h2{font:700 1.2rem Georgia,serif;margin:0 0 10px}
+p.lead{color:var(--mute);margin:0 0 24px;max-width:60ch}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
+.hint{color:var(--mute);font-size:.9rem;margin:0 0 12px}
+.row{display:grid;grid-template-columns:1.2fr 1.4fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
+input,textarea,button{font:inherit;color:inherit}
+input,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%;min-width:0}
+textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92rem}
+button{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:8px 14px;cursor:pointer}
+button.main{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.main{color:#0d1a19}}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.msg{padding:10px 12px;border-radius:6px;margin:8px 0;border-left:4px solid}
+.bad{background:var(--badbg);border-color:var(--bad)}.ok{background:var(--okbg);border-color:var(--ok)}
+.warn{background:var(--bg);border-color:var(--mute)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:4px 9px;text-align:center}
+th:first-child,td:first-child{text-align:left}
+.one{background:var(--badbg);font-weight:700}
+svg{width:100%;height:auto;max-height:480px}
+.sr{position:absolute;left:-9999px}
+@media (max-width:640px){.row{grid-template-columns:1fr 1fr}.row input:first-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main>
+<h1>Course clash checker</h1>
+<p class="lead">Enter each course with its date and time, then list which courses each student takes. The checker finds timetable overlaps, builds the course conflict graph and suggests time slots. Nothing leaves your browser.</p>
+
+<section>
+<h2>Courses and times</h2>
+<p class="hint">One row per course session. Courses on the same date clash when their times overlap.</p>
+<div id="courses"></div>
+<div class="actions"><button id="addRow" type="button">Add course</button></div>
+</section>
+
+<section>
+<h2>Student registrations</h2>
+<p class="hint">One student per line, as <code>ID: COURSE, COURSE</code>. To check only your own timetable, enter a single line.</p>
+<label class="sr" for="students">Student registrations</label>
+<textarea id="students" spellcheck="false"></textarea>
+<div class="actions">
+<button class="main" id="check" type="button">Check clashes</button>
+<button id="sample" type="button">Load sample data</button>
+<button id="clear" type="button">Clear all</button>
+</div>
+</section>
+
+<div id="out" aria-live="polite"></div>
+</main>
+<script>
+"use strict";
+var SAMPLE_C=[["MAT101","2026-12-07","09:00","11:00"],["PHY101","2026-12-07","10:00","12:00"],["CSC101","2026-12-07","13:00","15:00"],["STA101","2026-12-08","09:00","11:00"],["ENG101","2026-12-08","10:30","12:30"],["GST101","2026-12-09","09:00","11:00"]];
+var SAMPLE_S="S001: MAT101, PHY101, CSC101\nS002: MAT101, CSC101, STA101\nS003: PHY101, CSC101\nS004: MAT101, STA101, ENG101\nS005: ENG101, GST101\nS006: PHY101, STA101";
+var box=document.getElementById("courses"),out=document.getElementById("out"),stu=document.getElementById("students");
+
+function addRow(v){
+  v=v||["","","09:00","11:00"];
+  var r=document.createElement("div");r.className="row";
+  var f=[["text","Course code","MAT101",v[0]],["date","Date","",v[1]],["time","Start time","",v[2]],["time","End time","",v[3]]];
+  f.forEach(function(x){var i=document.createElement("input");i.type=x[0];i.placeholder=x[2];i.value=x[3];i.setAttribute("aria-label",x[1]);r.appendChild(i);});
+  var d=document.createElement("button");d.type="button";d.textContent="Remove";d.onclick=function(){r.remove();};
+  r.appendChild(d);box.appendChild(r);
+}
+function loadSample(){box.innerHTML="";SAMPLE_C.forEach(addRow);stu.value=SAMPLE_S;out.innerHTML="";}
+document.getElementById("addRow").onclick=function(){addRow();};
+document.getElementById("sample").onclick=loadSample;
+document.getElementById("clear").onclick=function(){box.innerHTML="";addRow();stu.value="";out.innerHTML="";};
+
+function code(s){return s.replace(/\s+/g,"").toUpperCase();}
+function msg(cls,text){var d=document.createElement("div");d.className="msg "+cls;d.textContent=text;return d;}
+function sec(title){var s=document.createElement("section");var h=document.createElement("h2");h.textContent=title;s.appendChild(h);out.appendChild(s);return s;}
+
+function check(){
+  out.innerHTML="";
+  var courses={},errors=[];
+  Array.prototype.forEach.call(box.children,function(r,n){
+    var i=r.querySelectorAll("input"),c=code(i[0].value),d=i[1].value,s=i[2].value,e=i[3].value;
+    if(!c&&!d&&!s&&!e)return;
+    if(!c||!d||!s||!e){errors.push("Row "+(n+1)+" is incomplete: fill in code, date, start and end.");return;}
+    if(e<=s){errors.push("Row "+(n+1)+" ("+c+"): the end time must be after the start time.");return;}
+    if(courses[c]){errors.push("Row "+(n+1)+": "+c+" is already listed. Use one row per course.");return;}
+    courses[c]={date:d,s:s,e:e};
+  });
+  var reg={};
+  stu.value.split("\n").forEach(function(line,n){
+    if(!line.trim())return;
+    var p=line.split(":");
+    if(p.length<2||!p[0].trim()){errors.push("Student line "+(n+1)+" needs the form ID: COURSE, COURSE.");return;}
+    var list=p.slice(1).join(":").split(/[,\s]+/).filter(Boolean).map(code);
+    reg[p[0].trim()]=(reg[p[0].trim()]||[]).concat(list).filter(function(x,i,a){return a.indexOf(x)===i;});
+  });
+  var names=Object.keys(courses).sort(),ids=Object.keys(reg);
+  if(errors.length||!names.length||!ids.length){
+    var s=sec("Fix these first");
+    errors.forEach(function(e){s.appendChild(msg("bad",e));});
+    if(!names.length)s.appendChild(msg("bad","Add at least one course with a date and times."));
+    if(!ids.length)s.appendChild(msg("bad","Add at least one student with their courses."));
+    return;
+  }
+  var unknown=[];
+  ids.forEach(function(id){reg[id].forEach(function(c){if(!courses[c]&&unknown.indexOf(c)<0)unknown.push(c);});});
+  // graph from shared students; real clash when times overlap
+  var edges={},adj={};names.forEach(function(c){adj[c]=[];});
+  ids.forEach(function(id){
+    var t=reg[id].filter(function(c){return courses[c];}).sort();
+    for(var a=0;a<t.length;a++)for(var b=a+1;b<t.length;b++){
+      var k=t[a]+"|"+t[b];
+      if(!edges[k]){edges[k]={a:t[a],b:t[b],who:[]};adj[t[a]].push(t[b]);adj[t[b]].push(t[a]);}
+      edges[k].who.push(id);
+    }
+  });
+  var keys=Object.keys(edges).sort();
+  keys.forEach(function(k){var e=edges[k],A=courses[e.a],B=courses[e.b];e.clash=A.date===B.date&&A.s<B.e&&B.s<A.e;});
+  var clashes=keys.filter(function(k){return edges[k].clash;});
+
+  var s1=sec("Timetable clashes");
+  if(unknown.length)s1.appendChild(msg("warn","These courses have no time entered, so they were skipped: "+unknown.join(", ")+"."));
+  if(!clashes.length)s1.appendChild(msg("ok","No clashes. No student has two overlapping courses."));
+  clashes.forEach(function(k){
+    var e=edges[k],A=courses[e.a],B=courses[e.b];
+    s1.appendChild(msg("bad",e.a+" ("+A.s+"–"+A.e+") overlaps "+e.b+" ("+B.s+"–"+B.e+") on "+A.date+". Affects: "+e.who.join(", ")+"."));
+  });
+
+  var s2=sec("Courses that share students");
+  s2.appendChild(msg("warn","Each pair below must not be scheduled at the same time. Pairs already overlapping are marked."));
+  if(!keys.length)s2.appendChild(msg("ok","No student takes two listed courses."));
+  keys.forEach(function(k){var e=edges[k];s2.appendChild(msg(e.clash?"bad":"ok",e.a+" and "+e.b+": shared by "+e.who.join(", ")+(e.clash?" (overlapping now)":" (no overlap)")));});
+
+  var deg={},max=0;names.forEach(function(c){deg[c]=adj[c].length;if(deg[c]>max)max=deg[c];});
+  var top=names.filter(function(c){return deg[c]===max;});
+  var s3=sec("Degrees and matrix");
+  s3.appendChild(msg("warn","Most conflicts: "+top.join(", ")+" with degree "+max+". The degrees add up to "+(2*keys.length)+", which is twice the "+keys.length+" conflict pairs."));
+  var w=document.createElement("div");w.className="scroll";
+  var tb=document.createElement("table"),hd="<tr><th>Degree</th>";
+  var tr=document.createElement("tr"),th=document.createElement("th");th.textContent="Course";tr.appendChild(th);
+  names.forEach(function(c){var h=document.createElement("th");h.textContent=c;tr.appendChild(h);});
+  var dh=document.createElement("th");dh.textContent="Degree";tr.appendChild(dh);tb.appendChild(tr);
+  names.forEach(function(c){
+    var r=document.createElement("tr"),h=document.createElement("td");h.textContent=c;r.appendChild(h);
+    names.forEach(function(d){var x=document.createElement("td"),on=adj[c].indexOf(d)>=0;x.textContent=on?1:0;if(on)x.className="one";r.appendChild(x);});
+    var g=document.createElement("td");g.textContent=deg[c];r.appendChild(g);tb.appendChild(r);
+  });
+  w.appendChild(tb);s3.appendChild(w);
+
+  // greedy colouring: highest degree first
+  var col={};
+  names.slice().sort(function(a,b){return deg[b]-deg[a]||(a<b?-1:1);}).forEach(function(c){
+    var u={};adj[c].forEach(function(n){if(col[n])u[col[n]]=1;});var k=1;while(u[k])k++;col[c]=k;
+  });
+  var slots={};names.forEach(function(c){(slots[col[c]]=slots[col[c]]||[]).push(c);});
+  var s4=sec("Suggested time slots");
+  s4.appendChild(msg("warn","Courses in the same slot share no students, so they can run at the same time."));
+  Object.keys(slots).forEach(function(k){s4.appendChild(msg("ok","Slot "+k+": "+slots[k].join(", ")));});
+
+  var s5=sec("Conflict graph");
+  s5.appendChild(msg("warn","Red lines are conflicts that overlap in time right now. Grey lines share students but do not overlap."));
+  var N=names.length,R=N>1?170:0,svg='<svg viewBox="0 0 440 400" role="img" aria-label="Course conflict graph">',P={};
+  names.forEach(function(c,i){var a=2*Math.PI*i/N-Math.PI/2;P[c]=[220+R*Math.cos(a),200+R*Math.sin(a)];});
+  keys.forEach(function(k){var e=edges[k];svg+='<line x1="'+P[e.a][0]+'" y1="'+P[e.a][1]+'" x2="'+P[e.b][0]+'" y2="'+P[e.b][1]+'" stroke="'+(e.clash?"var(--bad)":"var(--mute)")+'" stroke-width="'+(e.clash?3:1.5)+'"/>';});
+  names.forEach(function(c){svg+='<circle cx="'+P[c][0]+'" cy="'+P[c][1]+'" r="30" fill="var(--acc)"/><text x="'+P[c][0]+'" y="'+(P[c][1]+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="var(--card)">'+c+'</text>';});
+  var g=document.createElement("div");g.innerHTML=svg+"</svg>";s5.appendChild(g);
+  out.scrollIntoView({behavior:"smooth"});
+}
+document.getElementById("check").onclick=check;
+loadSample();
+</script>
+</body>
+</html>
