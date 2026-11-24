@@ -98,5 +98,45 @@ class TestTimeClashes(unittest.TestCase):
             parse_slot("2026-12-07", "12:00", "10:00")
 
 
+class TestFixes(unittest.TestCase):
+    def setUp(self):
+        self.reg = {"A": {"X", "Y"}, "B": {"Y", "Z"}}
+        self.sched = {"X": parse_slot("2026-12-07", "09:00", "11:00"),
+                      "Y": parse_slot("2026-12-07", "10:00", "12:00"),
+                      "Z": parse_slot("2026-12-07", "12:00", "14:00")}
+
+    def test_fix_removes_all_clashes(self):
+        moves, new, left = suggest_fixes(self.reg, self.sched)
+        self.assertTrue(moves)
+        self.assertEqual(left, [])
+        self.assertEqual(find_time_clashes(self.reg, new), [])
+
+    def test_fix_stays_in_allowed_hours_and_length(self):
+        moves, new, _ = suggest_fixes(self.reg, self.sched, "09:00", "16:00")
+        for m in moves:
+            self.assertGreaterEqual(m["new"][0].hour, 9)
+            self.assertLessEqual(m["new"][1].hour, 16)
+            self.assertEqual(m["new"][1] - m["new"][0], m["old"][1] - m["old"][0])
+
+    def test_no_weekend_unless_allowed(self):
+        sched = {"X": parse_slot("2026-12-04", "09:00", "11:00"),
+                 "Y": parse_slot("2026-12-04", "09:00", "11:00")}
+        _, new, _ = suggest_fixes({"A": {"X", "Y"}}, sched, "09:00", "11:00")
+        for s, e in new.values():
+            self.assertLess(s.weekday(), 5)
+
+    def test_unresolvable_is_reported(self):
+        sched = {"X": parse_slot("2026-12-07", "09:00", "11:00"),
+                 "Y": parse_slot("2026-12-07", "09:00", "11:00")}
+        moves, _, left = suggest_fixes({"A": {"X", "Y"}}, sched, "09:00", "11:00", extra_days=0)
+        self.assertEqual(moves, [])
+        self.assertEqual(len(left), 1)
+
+    def test_no_clash_means_no_moves(self):
+        sched = {"X": parse_slot("2026-12-07", "09:00", "11:00"),
+                 "Y": parse_slot("2026-12-07", "11:00", "13:00")}
+        self.assertEqual(suggest_fixes({"A": {"X", "Y"}}, sched)[0], [])
+
+
 if __name__ == "__main__":
     unittest.main()

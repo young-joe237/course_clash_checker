@@ -76,6 +76,8 @@ svg{width:100%;height:auto;max-height:480px}
 <p class="hint">One row per course. Courses on the same date clash when their times overlap.</p>
 <div id="courses"></div>
 <div class="actions"><button id="addRow" type="button">Add course</button></div>
+<h3>Allowed class hours for suggested fixes</h3>
+<div class="actions"><label>Earliest start <input id="w0" type="time" value="08:00" style="width:auto"></label><label>Latest end <input id="w1" type="time" value="18:00" style="width:auto"></label><label><input id="wk" type="checkbox" style="width:auto"> Allow weekends</label></div>
 </section>
 <section>
 <h2>Student registrations</h2>
@@ -93,7 +95,7 @@ svg{width:100%;height:auto;max-height:480px}
 <section><h2>The idea</h2>
 <p>Each course is a <b>vertex</b>. Two courses are joined by an <b>edge</b> when at least one student takes both, so they must not run at the same time. Once the data is a graph, conflicts can be counted, listed and drawn.</p>
 <h3>How to use it</h3>
-<p>1. Add your courses with date, start and end time. 2. List each student and their courses. 3. Press Check clashes, then click any course in the timeline, graph or degree list to see its conflicts. 4. Open the Report tab to print or save the results as a PDF.</p></section>
+<p>1. Add your courses with date, start and end time. 2. List each student and their courses. 3. Press Check clashes, then click any course in the timeline, graph or degree list to see its conflicts. 4. Read the suggested fixes and press Apply suggested fixes to resolve the clashes. 5. Open the Report tab to print or save the results as a PDF.</p></section>
 <section><h2>Discrete structures used</h2>
 <p><b>Sets</b> hold each student’s unique courses. The <b>graph</b> G = (V, E) models conflicts. The <b>adjacency list</b> and <b>adjacency matrix</b> store them. The <b>degree</b> of a course is its number of conflicts, and the <b>handshake lemma</b> (degrees add up to twice the edges) checks the count. <b>Graph colouring</b> assigns time slots so that courses sharing students never share a slot.</p></section>
 <section><h2>Limitations</h2>
@@ -129,6 +131,36 @@ function code(s){return s.replace(/\s+/g,"").toUpperCase();}
 function mins(t){var p=t.split(":");return +p[0]*60+ +p[1];}
 function fdate(d){return new Date(d+"T00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});}
 
+function addDays(d,n){var t=new Date(d+"T12:00:00Z");t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10);}
+function hm(m){return("0"+Math.floor(m/60)).slice(-2)+":"+("0"+m%60).slice(-2);}
+function suggest(C,adj,E,keys,deg){
+  var w0=mins($("w0").value||"08:00"),w1=mins($("w1").value||"18:00"),wk=$("wk").checked,C2={},fixes=[],left=[],skip={},days=[];
+  Object.keys(C).forEach(function(c){C2[c]={date:C[c].date,s:C[c].s,e:C[c].e};});
+  var ds=Object.keys(C).map(function(c){return C[c].date;}).sort(),last=ds[ds.length-1]>addDays(ds[0],6)?ds[ds.length-1]:addDays(ds[0],6);
+  for(var d=ds[0];d<=last;d=addDays(d,1)){var g=new Date(d+"T12:00:00Z").getUTCDay();if(wk||(g>0&&g<6))days.push(d);}
+  function free(c,d,s,e){return adj[c].every(function(n){var o=C2[n];return o.date!==d||e<=mins(o.s)||mins(o.e)<=s;});}
+  function best(c){
+    var len=mins(C2[c].e)-mins(C2[c].s),cur=mins(C2[c].s),b=null;
+    days.forEach(function(d){for(var s=w0;s+len<=w1;s+=30){
+      if(!free(c,d,s,s+len))continue;
+      var sc=Math.abs((new Date(d)-new Date(C2[c].date))/864e5)*1000+Math.abs(s-cur);
+      if(!b||sc<b.sc)b={sc:sc,date:d,s:hm(s),e:hm(s+len)};}});
+    return b;}
+  for(var n=0;n<100;n++){
+    var cl=keys.filter(function(k){var e=E[k],A=C2[e.a],B=C2[e.b];return !skip[k]&&A.date===B.date&&A.s<B.e&&B.s<A.e;});
+    if(!cl.length)break;
+    var e=E[cl[0]],pair=[e.a,e.b].sort(function(x,y){return deg[x]-deg[y]||(C2[y].s<C2[x].s?-1:1);}),done=false;
+    for(var i=0;i<2&&!done;i++){var c=pair[i],b=best(c);
+      if(b){fixes.push({c:c,other:i?pair[0]:pair[1],who:e.who,from:{date:C2[c].date,s:C2[c].s,e:C2[c].e},to:{date:b.date,s:b.s,e:b.e}});C2[c]={date:b.date,s:b.s,e:b.e};done=true;}}
+    if(!done){skip[cl[0]]=1;left.push(e);}
+  }
+  return{fixes:fixes,left:left,C2:C2};
+}
+function applyFixes(){
+  Array.prototype.forEach.call(box.children,function(r){var i=r.querySelectorAll("input"),c=code(i[0].value);
+    if(M.C2[c]){i[1].value=M.C2[c].date;i[2].value=M.C2[c].s;i[3].value=M.C2[c].e;}});
+  M=analyze();render();
+}
 function analyze(){
   var errs=[],C={},R={};
   Array.prototype.forEach.call(box.children,function(r,n){
@@ -167,7 +199,8 @@ function analyze(){
   names.slice().sort(function(a,b){return deg[b]-deg[a]||(a<b?-1:1);}).forEach(function(c){
     var u={};adj[c].forEach(function(n){if(col[n])u[col[n]]=1;});var k=1;while(u[k])k++;col[c]=k;});
   names.forEach(function(c){(slots[col[c]]=slots[col[c]]||[]).push(c);});
-  return{C:C,R:R,names:names,ids:ids,unknown:unknown,E:E,keys:keys,adj:adj,deg:deg,max:max,
+  var fx=suggest(C,adj,E,keys,deg);
+  return{fixes:fx.fixes,left:fx.left,C2:fx.C2,C:C,R:R,names:names,ids:ids,unknown:unknown,E:E,keys:keys,adj:adj,deg:deg,max:max,
     top:names.filter(function(c){return deg[c]===max;}),col:col,slots:slots,
     clashes:keys.filter(function(k){return E[k].clash;}).map(function(k){return E[k];}),inClash:inClash};
 }
@@ -206,6 +239,12 @@ function render(){
   var s2=sec("Conflicts");
   if(!M.keys.length)s2.appendChild(el("div","msg ok","No student takes two listed courses."));
   M.keys.forEach(function(k){var e=M.E[k];s2.appendChild(el("div","msg "+(e.clash?"bad":"ok"),e.a+" and "+e.b+": shared by "+e.who.join(", ")+(e.clash?" (overlapping)":" (no overlap)")));});
+
+  var sf=sec("Suggested fixes");
+  if(!M.clashes.length)sf.appendChild(el("div","msg ok","Nothing to fix. Your timetable has no clashes."));
+  M.fixes.forEach(function(f){sf.appendChild(el("div","msg warn","Move "+f.c+" from "+fdate(f.from.date)+" "+f.from.s+"–"+f.from.e+" to "+fdate(f.to.date)+" "+f.to.s+"–"+f.to.e+". This clears the clash with "+f.other+" (students: "+f.who.join(", ")+") and creates no new clash with any course that shares its students."));});
+  M.left.forEach(function(e){sf.appendChild(el("div","msg bad","No free time found for "+e.a+" or "+e.b+" inside your allowed hours. Widen the hours or allow weekends."));});
+  if(M.fixes.length){var ap=el("button","main","Apply suggested fixes");ap.type="button";ap.onclick=applyFixes;sf.appendChild(ap);}
 
   var s3=sec("Conflict graph");
   var bt=el("button",null,"Colour by time slot");bt.type="button";
@@ -274,6 +313,9 @@ function report(){
   var tb=el("table"),h=el("tr");["Course","Date","Time","Degree","Conflicts with"].forEach(function(x){h.appendChild(el("th",null,x));});tb.appendChild(h);
   M.names.forEach(function(c){var r=el("tr");[c,fdate(M.C[c].date),M.C[c].s+"–"+M.C[c].e,M.deg[c],M.adj[c].join(", ")||"none"].forEach(function(x){r.appendChild(el("td",null,x));});tb.appendChild(r);});
   var w=el("div","scroll");w.appendChild(tb);p.appendChild(w);
+  if(M.clashes.length){p.appendChild(el("h2",null,"Suggested fixes"));var u1=el("ul");
+    M.fixes.forEach(function(f){u1.appendChild(el("li",null,"Move "+f.c+" from "+fdate(f.from.date)+" "+f.from.s+"–"+f.from.e+" to "+fdate(f.to.date)+" "+f.to.s+"–"+f.to.e+", which clears the clash with "+f.other+" without creating a new one."));});
+    M.left.forEach(function(e){u1.appendChild(el("li",null,"No free time found for "+e.a+" or "+e.b+" inside the allowed hours."));});p.appendChild(u1);}
   p.appendChild(el("h2",null,"Suggested time slots"));
   var u2=el("ul");Object.keys(M.slots).forEach(function(k){u2.appendChild(el("li",null,"Slot "+k+": "+M.slots[k].join(", ")));});p.appendChild(u2);
   p.appendChild(el("h2",null,"Method"));

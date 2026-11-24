@@ -162,6 +162,95 @@ def print_clashes(registrations, schedule):
         print("         students affected: %s" % ", ".join(who))
     return clashes
 
+
+# ----------------------------------------------------------------------------
+# 1c. SUGGESTED FIXES (move a course to a free time)
+# ----------------------------------------------------------------------------
+from datetime import timedelta
+
+
+def suggest_fixes(registrations, schedule, day_start="08:00", day_end="18:00",
+                  weekends=False, extra_days=6):
+    """
+    For every clash, move one of the two courses to the nearest free slot that
+    (a) lies inside the allowed hours and days and
+    (b) does not overlap ANY course that shares a student with it.
+    Because rule (b) uses the conflict graph, a move never creates a new clash.
+    Returns (moves, new_schedule, unresolved).
+    """
+    vertices = get_courses(registrations)
+    _, edges, _ = build_conflict_graph(registrations)
+    adj = adjacency_list(vertices, edges)
+    deg = degrees(adj)
+    sched = dict(schedule)
+    if not sched:
+        return [], sched, []
+    t0 = datetime.strptime(day_start, "%H:%M").time()
+    t1 = datetime.strptime(day_end, "%H:%M").time()
+    first = min(s.date() for s, _ in sched.values())
+    last = max(max(s.date() for s, _ in sched.values()),
+               first + timedelta(days=extra_days))
+    days, d = [], first
+    while d <= last:
+        if weekends or d.weekday() < 5:
+            days.append(d)
+        d += timedelta(days=1)
+
+    def best_slot(c):
+        start0, end0 = sched[c]
+        length = end0 - start0
+        best = None
+        for day in days:
+            s = datetime.combine(day, t0)
+            limit = datetime.combine(day, t1)
+            while s + length <= limit:
+                cand = (s, s + length)
+                if all(not slots_overlap(cand, sched[n]) for n in adj[c] if n in sched):
+                    score = abs((day - start0.date()).days) * 100000 + \
+                        abs(int((s - start0).total_seconds() // 60))
+                    if best is None or score < best[0]:
+                        best = (score, cand)
+                s += timedelta(minutes=30)
+        return best[1] if best else None
+
+    moves, unresolved, skip = [], [], set()
+    for _ in range(100):
+        todo = [c for c in find_time_clashes(registrations, sched) if c[:2] not in skip]
+        if not todo:
+            break
+        a, b, who = todo[0]
+        order = sorted((a, b), key=lambda x: (deg[x], -sched[x][0].timestamp()))
+        for c in order:
+            slot = best_slot(c)
+            if slot:
+                other = b if c == a else a
+                moves.append({"course": c, "other": other, "students": who,
+                              "old": sched[c], "new": slot})
+                sched[c] = slot
+                break
+        else:
+            skip.add((a, b))
+            unresolved.append((a, b, who))
+    return moves, sched, unresolved
+
+
+def print_fixes(registrations, schedule, clashes, **window):
+    if not clashes:
+        return
+    fmt = "%a %d %b %H:%M"
+    moves, _, unresolved = suggest_fixes(registrations, schedule, **window)
+    print("\n--- 0b. Suggested fixes ---")
+    for m in moves:
+        print("  Move %s from %s-%s to %s-%s" % (
+            m["course"], m["old"][0].strftime(fmt), m["old"][1].strftime("%H:%M"),
+            m["new"][0].strftime(fmt), m["new"][1].strftime("%H:%M")))
+        print("    clears the clash with %s (students: %s); no new clash with any"
+              % (m["other"], ", ".join(m["students"])))
+        print("    course that shares its students.")
+    for a, b, who in unresolved:
+        print("  No free time found for %s or %s inside the allowed hours." % (a, b))
+        print("    Widen the hours (--day-start / --day-end) or add --weekends.")
+
 # ----------------------------------------------------------------------------
 # 2. GRAPH CONSTRUCTION  (sets, vertices, edges)
 # ----------------------------------------------------------------------------
@@ -267,7 +356,7 @@ def print_matrix(vertices, matrix):
         print(v.ljust(width) + "".join(str(x).rjust(width) for x in row))
 
 
-def print_report(registrations, schedule=None):
+def print_report(registrations, schedule=None, window=None):
     vertices, edges, shared = build_conflict_graph(registrations)
     adj = adjacency_list(vertices, edges)
     matrix = adjacency_matrix(vertices, edges)
@@ -284,7 +373,8 @@ def print_report(registrations, schedule=None):
           % (len(registrations), len(vertices), len(edges)))
 
     if schedule:
-        print_clashes(registrations, schedule)
+        clashes = print_clashes(registrations, schedule)
+        print_fixes(registrations, schedule, clashes, **(window or {}))
 
     print("\n--- 1. Conflicting course pairs (share students) ---")
     if not edges:
@@ -358,6 +448,9 @@ def draw_graph(vertices, edges, colour, output="conflict_graph.png", show=True):
 def main(argv=None):
     p = argparse.ArgumentParser(description="Detect course conflicts using graph theory.")
     p.add_argument("csv", nargs="?", help="CSV file: student_id,course,course,...")
+    p.add_argument("--day-start", default="08:00", help="earliest class start for fixes")
+    p.add_argument("--day-end", default="18:00", help="latest class end for fixes")
+    p.add_argument("--weekends", action="store_true", help="allow Saturday/Sunday in fixes")
     p.add_argument("-s", "--schedule", help="CSV: course,date,start,end")
     p.add_argument("-i", "--interactive", action="store_true", help="enter data by keyboard")
     p.add_argument("-o", "--output", default="conflict_graph.png", help="graph image file")
@@ -380,7 +473,7 @@ def main(argv=None):
         print("Error: %s" % err)
         return 1
 
-    vertices, edges, colour = print_report(registrations, schedule)
+    vertices, edges, colour = print_report(registrations, schedule, dict(day_start=args.day_start, day_end=args.day_end, weekends=args.weekends))
     try:
         draw_graph(vertices, edges, colour, args.output, show=not args.no_plot)
     except ImportError:
