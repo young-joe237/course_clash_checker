@@ -4,7 +4,7 @@ A student course registration conflict detection system that uses graph theory. 
 
 **CSC213 Discrete Structures | Group 1 | Lecturer: Dr. Gabriel Ayem**
 
-**Live demo:** https://YOUR-USERNAME.github.io/course-clash-checker/
+**Live demo:** https://young-joe237.github.io/course_clash_checker/
 
 ## How it works
 
