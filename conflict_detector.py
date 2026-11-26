@@ -36,7 +36,7 @@ SAMPLE_DATA = {
 
 
 def normalise_code(code):
-    """Clean a course code: strip spaces, upper-case (so 'mat 101' == 'MAT112')."""
+    """Clean a course code: strip spaces, upper-case (so 'mat 112' == 'MAT112')."""
     return "".join(code.split()).upper()
 
 
