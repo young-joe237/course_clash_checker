@@ -26,17 +26,17 @@ from itertools import combinations
 # ----------------------------------------------------------------------------
 
 SAMPLE_DATA = {
-    "A": {"MAT101", "PHY101"},
-    "B": {"MAT101", "CSC101"},
-    "C": {"MAT101", "STA101"},
-    "D": {"PHY101", "CSC101"},
-    "E": {"ENG101", "STA101"},
-    "F": {"ENG101"},
+    "A": {"MAT112", "PHY132"},
+    "B": {"MAT112", "CSC213"},
+    "C": {"MAT112", "STA101"},
+    "D": {"PHY132", "CSC213"},
+    "E": {"WRI101", "STA101"},
+    "F": {"WRI101"},
 }
 
 
 def normalise_code(code):
-    """Clean a course code: strip spaces, upper-case (so 'mat 101' == 'MAT101')."""
+    """Clean a course code: strip spaces, upper-case (so 'mat 101' == 'MAT112')."""
     return "".join(code.split()).upper()
 
 
